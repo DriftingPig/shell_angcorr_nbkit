@@ -6,7 +6,7 @@ mkdir code
 cd code
 git clone ....
 
-first, make a parameter set in ./parameter/ folder like set0.sh
+first, make a parameter set in ./parameter/ folder like set2.sh
 
 then, run (change number of nodes used as you change the size of the mock you make)
 
@@ -21,7 +21,12 @@ after finish, run
 (you will need to make an environment with treecorr,astropy,numpy in it, and it MUST NOT have nbodykit, then change the 'corr' to the one you make)
 (the the number of nodes used if size get larger)
 
-sbatch angcorr_cal.sh
+sbatch rsd_angcorr_cal.sh
+
+
+at the same time, you can run this for computing 3d correlation functions
+
+sbatch 3dcorr_cal.sh
 
 
 

@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #SBATCH -p debug
-#SBATCH -N 13
+#SBATCH -N 40
 #SBATCH -t 00:30:00
 #SBATCH --account=desi
 #SBATCH -J angshell
@@ -39,5 +39,5 @@ source /global/common/software/m3035/conda-activate.sh 3.7
 #bcast-pip cffi
 
 #bcast-pip treecorr
-source parameters/set0.sh 
-srun -n 104 -c 8 python angcorr_shell.py
+source parameters/set2.sh 
+srun -n 320 -c 8 python angcorr_shell.py

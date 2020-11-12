@@ -11,8 +11,8 @@ import astropy.io.fits as fits
 import os
 
 shell_outdir=os.environ["shell_outdir"]
-angcorr_outdir=os.environ["angcorr_outdir"]
-rsd=bool(os.environ["rsd"])
+xicorr_outdir=os.environ["xicorr_outdir"]
+
 
 class MyApp(object):
     """
@@ -41,20 +41,13 @@ class MyApp(object):
         # let's prepare our work queue. This can be built at initialization time
         # but it can also be added later as more work become available
         #
-        data0 = fits.getdata(shell_outdir+'angcorr0.fits')
-        L = len(data0['ra']) 
-        ran_L = L*10
-        random_state=np.random.RandomState()
-        u1,u2= random_state.uniform(size=(2, ran_L) )
-        ramin,ramax= 0,90
-        dcmin,dcmax= 0,90
-        cmin = np.sin(dcmin*np.pi/180)
-        cmax = np.sin(dcmax*np.pi/180)
-        RA   = ramin + u1*(ramax-ramin)
-        DEC  = 90-np.arccos(cmin+u2*(cmax-cmin))*180./np.pi
+        data = fits.getdata(shell_outdir+'random.fits')
+        X=data['X']
+        Y=data['Y']
+        Z=data['Z']
         lists=list()
         for i in range(tasks):
-            lists.append((i,RA,DEC))
+            lists.append((i,X,Y,Z))
 
         for i in range(tasks):
             # 'data' will be passed to the slave and can be anything
@@ -103,22 +96,17 @@ class MySlave(Slave):
         return (True, 'I completed my task (%d)' % task_arg)
 
 def corrfun_one(X):
-    (chunk_num,ran_ra,ran_dec)=X
-    if rsd:
-        data = fits.getdata(shell_outdir+'rsd_angcorr%d.fits'%chunk_num)
-    else:
-        data = fits.getdata(shell_outdir+'angcorr%d.fits'%chunk_num)
-    cat1 = treecorr.Catalog(ra=data['ra'], dec=data['dec'], ra_units='degrees', dec_units='degrees')
-    cat2 = treecorr.Catalog(ra=ran_ra, dec=ran_dec, ra_units='degrees', dec_units='degrees')
-    thetamin=0.9
-    thetamax=9
-    nthetabins=10
+    (chunk_num,pos_x,pos_y,pos_z)=X
+    data = fits.getdata(shell_outdir+'angcorr%d.fits'%chunk_num)
+    cat1 = treecorr.Catalog(x=data['X'], y=data['Y'], z=data['Z'])
+    cat2 = treecorr.Catalog(x=pos_x, y=pos_y, z=pos_z)
+    nthetabins=40
     bin_slop=0
-    bin_type="Log"
-    nn = treecorr.NNCorrelation(min_sep=thetamin, max_sep=thetamax, nbins = nthetabins, bin_slop=bin_slop, bin_type=bin_type,sep_units='degrees')
-    dr = treecorr.NNCorrelation(min_sep=thetamin, max_sep=thetamax, nbins = nthetabins, bin_slop=bin_slop, bin_type=bin_type,sep_units='degrees')
-    rr = treecorr.NNCorrelation(min_sep=thetamin, max_sep=thetamax, nbins = nthetabins, bin_slop=bin_slop, bin_type=bin_type,sep_units='degrees')   
-    rd = treecorr.NNCorrelation(min_sep=thetamin, max_sep=thetamax, nbins = nthetabins, bin_slop=bin_slop, bin_type=bin_type,sep_units='degrees')  
+    bin_type="Linear"
+    nn = treecorr.NNCorrelation(min_sep=1, max_sep=200, nbins = nthetabins, bin_slop=bin_slop, bin_type=bin_type)
+    dr = treecorr.NNCorrelation(min_sep=1, max_sep=200, nbins = nthetabins, bin_slop=bin_slop, bin_type=bin_type)
+    rr = treecorr.NNCorrelation(min_sep=1, max_sep=200, nbins = nthetabins, bin_slop=bin_slop, bin_type=bin_type)   
+    rd = treecorr.NNCorrelation(min_sep=1, max_sep=200, nbins = nthetabins, bin_slop=bin_slop, bin_type=bin_type)  
     nn.process(cat1)
     dr.process(cat1,cat2)
     rr.process(cat2)
@@ -126,10 +114,7 @@ def corrfun_one(X):
     xi,varxi = nn.calculateXi(rr,dr,rd)
     x = nn.meanr
     y = xi
-    if rsd:
-        np.savetxt(angcorr_outdir+'rsd_angcorr_%d.txt'%chunk_num,np.array([x,y,varxi]).transpose())
-    else:
-        np.savetxt(angcorr_outdir+'angcorr_%d.txt'%chunk_num,np.array([x,y,varxi]).transpose())
+    np.savetxt(xicorr_outdir+'3dcorr_%d.txt'%chunk_num,np.array([x,y,varxi]).transpose())
 
 def main():
 

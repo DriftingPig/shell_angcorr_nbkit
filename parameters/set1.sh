@@ -8,11 +8,11 @@ export config_h=0.7
 export config_ns=0.95
 export config_sigma8=0.8
 export config_bias=1.0
-export outdir="../output/mocks/"
-export shell_outdir="../output/mocks/angcorr_data/"
-export angcorr_outdir="../output/mocks/angcorr_result/"
+export outdir="../output/mocks1/mock.bigfile"
+export shell_outdir="../output/mocks1/angcorr_data/"
+export angcorr_outdir="../output/mocks1/angcorr_result/"
 export tot_mock=100
-export density=0.0003
+export density=0.003
 export seed=0
 
 mkdir -p $shell_outdir
